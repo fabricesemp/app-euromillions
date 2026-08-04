@@ -280,6 +280,15 @@ with ong1:
         # Le bouton normal pour les autres stratégies gratuites (Chauds, Froids, Mixte)
         if st.button("🚀 Générer des grilles", type="primary"):
             st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
+            
+            # --- LE MOUCHARD TELEGRAM ---
+            try:
+                tk = st.secrets["TELEGRAM_TOKEN"]
+                cid = st.secrets["TELEGRAM_CHAT_ID"]
+                msg_espion = f"👀 *Visiteur* : {nb_g} grille(s) générée(s) (Stratégie: {strat})."
+                envoyer_telegram(tk, cid, msg_espion)
+            except:
+                pass
 
     # --- L'AFFICHAGE DES GRILLES (Commun au gratuit et au PRO) ---
     if 'dernieres_grilles' in st.session_state and st.session_state.dernieres_grilles:
