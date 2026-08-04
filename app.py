@@ -12,12 +12,11 @@ from datetime import datetime
 
 st.set_page_config(page_title="Générer tirages", page_icon="💎", layout="wide")
 
-# --- CACHER LE DESIGN STREAMLIT ---
+# --- CACHER LE DESIGN STREAMLIT (Sauf le header pour garder la flèche mobile) ---
 cacher_style = """
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
 </style>
 """
 st.markdown(cacher_style, unsafe_allow_html=True)
@@ -62,7 +61,6 @@ class AssistantFDJ:
                     if self.jeu == "EuroMillions":
                         spe = [int(ligne[f'etoile_{i}']) for i in range(1, 3)]
                     else:
-                        # Gère les différentes écritures des fichiers FDJ Loto
                         cle_chance = 'numero_chance' if 'numero_chance' in ligne else 'chance'
                         spe = [int(ligne[cle_chance])]
                         
@@ -195,10 +193,13 @@ def envoyer_telegram(token, chat_id, message):
         return requests.post(url, data={"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}).ok
     except: return False
 
-# --- UI GLOBALE ---
-st.sidebar.markdown("### 🎰 Sélecteur de Jeu")
-jeu_selectionne = st.sidebar.radio("Quel jeu analyser ?", ["EuroMillions", "Loto"])
-st.sidebar.markdown("---")
+# --- UI GLOBALE & SÉLECTEUR DE JEU EN HAUT ---
+st.title("💎 Tableau de Bord FDJ Pro")
+
+# Un sélecteur de jeu bien visible en haut pour tout le monde (PC & Mobile)
+col_jeu1, col_jeu2 = st.columns([2, 1])
+with col_jeu1:
+    jeu_selectionne = st.radio("Choisissez votre jeu :", ["EuroMillions", "Loto"], horizontal=True)
 
 app = AssistantFDJ(jeu=jeu_selectionne)
 
@@ -206,6 +207,8 @@ app = AssistantFDJ(jeu=jeu_selectionne)
 if "jeu_actuel" not in st.session_state or st.session_state.jeu_actuel != jeu_selectionne:
     st.session_state.jeu_actuel = jeu_selectionne
     st.session_state.dernieres_grilles = []
+
+st.markdown("---")
 
 # --- ECRAN D'INITIALISATION ---
 if not app.charger_donnees():
@@ -225,7 +228,7 @@ if not app.charger_donnees():
         st.success(f"Base {app.jeu} installée ! Démarrage..."); time.sleep(1); st.rerun()
     st.stop()
 
-# --- MENU LATÉRAL ---
+# --- MENU LATÉRAL (Uniquement pour les réglages avancés) ---
 st.sidebar.title("⚙️ Filtres d'Experts")
 configs_filtres = {
     'somme': st.sidebar.checkbox("✅ Somme (90 - 160)", value=True),
@@ -233,13 +236,8 @@ configs_filtres = {
     'consecutif': st.sidebar.checkbox("❌ Pas de suites", value=True),
     'premier': st.sidebar.checkbox("🔢 Forcer 1 nb premier", value=True)
 }
-st.sidebar.markdown("---")
-st.sidebar.title("📲 Telegram")
-tele_token = st.sidebar.text_input("Token du Bot", type="password")
-tele_chat_id = st.sidebar.text_input("Chat ID", type="password")
 
 # --- INTERFACE PRINCIPALE ---
-st.title(f"💎 Tableau de Bord {app.jeu} Pro")
 ong1, ong2, ong3 = st.tabs(["🎲 Générateur", "🌡️ Heatmap & Stats", "💸 Budget & Gains"])
 
 with ong1:
@@ -251,16 +249,14 @@ with ong1:
     if strat == "Prédictif (IA Markov)":
         st.warning("🔒 **Version PRO :** La stratégie prédictive IA est actuellement en test privé.")
         
-        # Le champ pour le code secret PRO
         code_pro = st.text_input("🔑 Vous avez reçu un code d'accès ?", type="password")
         
-        if code_pro == "VIP-PRO-2026": # VOTRE CODE SECRET EST ICI
+        if code_pro == "VIP-PRO-2026":
             st.success("🎉 Mode PRO débloqué !")
             if st.button("🚀 Générer avec IA Markov", type="primary"):
                 st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
         
         else:
-            # S'il n'a pas le bon code, on lui propose de s'inscrire
             email_lead = st.text_input("💌 Sinon, entrez votre e-mail pour rejoindre la liste d'attente :")
             if st.button("Rejoindre la liste d'attente"):
                 if "@" in email_lead:
@@ -277,7 +273,6 @@ with ong1:
                     st.error("⚠️ Veuillez entrer une adresse e-mail valide.")
                 
     else:
-        # Le bouton normal pour les autres stratégies gratuites (Chauds, Froids, Mixte)
         if st.button("🚀 Générer des grilles", type="primary"):
             st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
             
@@ -285,12 +280,12 @@ with ong1:
             try:
                 tk = st.secrets["TELEGRAM_TOKEN"]
                 cid = st.secrets["TELEGRAM_CHAT_ID"]
-                msg_espion = f"👀 *Visiteur* : {nb_g} grille(s) générée(s) (Stratégie: {strat})."
+                msg_espion = f"👀 *Visiteur* : {nb_g} grille(s) générée(s) (Jeu: {app.jeu} | Strat: {strat})."
                 envoyer_telegram(tk, cid, msg_espion)
             except:
                 pass
 
-    # --- L'AFFICHAGE DES GRILLES (Commun au gratuit et au PRO) ---
+    # --- L'AFFICHAGE DES GRILLES ---
     if 'dernieres_grilles' in st.session_state and st.session_state.dernieres_grilles:
         st.markdown("---")
         for i, (num, spe) in enumerate(st.session_state.dernieres_grilles):
@@ -308,16 +303,18 @@ with ong1:
                 st.success("Tickets sauvegardés !")
         with b2:
             if st.button("📲 M'envoyer sur Telegram"):
-                if tele_token and tele_chat_id:
+                try:
+                    t_token = st.secrets["TELEGRAM_TOKEN"]
+                    t_chat = st.secrets["TELEGRAM_CHAT_ID"]
                     msg = f"🎲 *Vos Grilles {app.jeu} ({strat})* 🎲\n\n"
                     for i, (n, s) in enumerate(st.session_state.dernieres_grilles):
                         msg += f"🎫 *Grille {i+1} :* [ {'-'.join(map(str, n))} ] {app.icone_spe} [ {'-'.join(map(str, s))} ]\n"
-                    if envoyer_telegram(tele_token, tele_chat_id, msg): 
-                        st.success("Envoyé !")
+                    if envoyer_telegram(t_token, t_chat, msg): 
+                        st.success("Envoyé sur Telegram !")
                     else: 
                         st.error("Erreur d'envoi.")
-                else:
-                    st.warning("Veuillez renseigner vos identifiants Telegram dans le menu de gauche.")
+                except:
+                    st.error("⚠️ Configurez vos codes Telegram dans les paramètres Secrets de Streamlit.")
 
 with ong2:
     st.write(f"Analyse basée sur **{len(app.tirages_numeros)} tirages**.")
