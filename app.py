@@ -241,17 +241,17 @@ with ong1:
         st.warning("🔒 **Version PRO :** La stratégie prédictive IA est actuellement en test privé.")
         email_lead = st.text_input("💌 Entrez votre e-mail pour rejoindre la liste d'attente prioritaire :")
     
-    if st.button("Rejoindre la liste d'attente"):
-        if "@" in email_lead:
-            try:
-                token = st.secrets["TELEGRAM_TOKEN"]
-                chat_id = st.secrets["TELEGRAM_CHAT_ID"]
-                msg = f"🔔 *NOUVEAU PROSPECT PRO !*\nJeu : {app.jeu}\nEmail : {email_lead}"
-                envoyer_telegram(token, chat_id, msg)
-                st.success("✅ C'est noté ! Vous serez le premier prévenu du lancement public.")
-                st.balloons()
-            except:
-                st.error("Erreur serveur, veuillez réessayer.")
+        if st.button("Rejoindre la liste d'attente"):
+            if "@" in email_lead:
+                try:
+                    token = st.secrets["TELEGRAM_TOKEN"]
+                    chat_id = st.secrets["TELEGRAM_CHAT_ID"]
+                    msg = f"🔔 *NOUVEAU PROSPECT PRO !*\nJeu : {app.jeu}\nEmail : {email_lead}"
+                    envoyer_telegram(token, chat_id, msg)
+                    st.success("✅ C'est noté ! Vous serez le premier prévenu du lancement public.")
+                    st.balloons()
+                except:
+                    st.error("Erreur serveur, veuillez réessayer.")
         else:
             st.error("⚠️ Veuillez entrer une adresse e-mail valide.")
             
