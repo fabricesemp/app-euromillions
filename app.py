@@ -237,6 +237,26 @@ with ong1:
     with c1: strat = st.selectbox("Stratégie", ["Prédictif (IA Markov)", "Mixte (Recommandé)", "Chauds", "Froids"])
     with c2: nb_g = st.slider("Nombre de grilles", 1, 10, 1)
 
+    if strat == "Prédictif (IA Markov)":
+    st.warning("🔒 **Version PRO :** La stratégie prédictive IA est actuellement en test privé.")
+    email_lead = st.text_input("💌 Entrez votre e-mail pour rejoindre la liste d'attente prioritaire :")
+    
+    if st.button("Rejoindre la liste d'attente"):
+        if "@" in email_lead:
+            try:
+                token = st.secrets["TELEGRAM_TOKEN"]
+                chat_id = st.secrets["TELEGRAM_CHAT_ID"]
+                msg = f"🔔 *NOUVEAU PROSPECT PRO !*\nJeu : {app.jeu}\nEmail : {email_lead}"
+                envoyer_telegram(token, chat_id, msg)
+                st.success("✅ C'est noté ! Vous serez le premier prévenu du lancement public.")
+                st.balloons()
+            except:
+                st.error("Erreur serveur, veuillez réessayer.")
+        else:
+            st.error("⚠️ Veuillez entrer une adresse e-mail valide.")
+            
+else:
+    # Le bouton normal pour les autres stratégies gratuites (Chauds, Froids, Mixte)
     if st.button("🚀 Générer des grilles", type="primary"):
         st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
 
