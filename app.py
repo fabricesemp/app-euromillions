@@ -10,7 +10,7 @@ import altair as alt
 from collections import Counter
 from datetime import datetime
 
-st.set_page_config(page_title="Suite FDJ Pro", page_icon="💎", layout="wide")
+st.set_page_config(page_title="Générer tirages", page_icon="💎", layout="wide")
 
 class AssistantFDJ:
     def __init__(self, jeu="EuroMillions"):
