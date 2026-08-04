@@ -45,7 +45,75 @@ class AssistantFDJ:
         self.numeros_possibles = list(range(1, self.max_num + 1))
         self.speciaux_possibles = list(range(1, self.max_spe + 1))
         self.tirages_numeros = []
+        self.tirages_speciaux = []import streamlit as st
+import pandas as pd
+import zipfile
+import csv
+import random
+import os
+import time
+import requests
+import altair as alt
+from collections import Counter
+from datetime import datetime
+
+st.set_page_config(page_title="Générer tirages", page_icon="💎", layout="wide")
+
+# --- CACHER LE DESIGN STREAMLIT (Sauf le header pour garder la flèche mobile) ---
+cacher_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+</style>
+"""
+st.markdown(cacher_style, unsafe_allow_html=True)
+
+class AssistantFDJ:
+    def __init__(self, jeu="EuroMillions"):
+        self.jeu = jeu
+        # Configuration dynamique selon le jeu choisi
+        if self.jeu == "EuroMillions":
+            self.max_num = 50
+            self.max_spe = 12
+            self.nb_spe_a_tirer = 2
+            self.nom_spe = "Étoile(s)"
+            self.icone_spe = "⭐"
+            self.fichier_cache = "historique_euromillions_master.csv"
+            self.fichier_tickets = "mes_tickets_euromillions.csv"
+        else: # Loto
+            self.max_num = 49
+            self.max_spe = 10
+            self.nb_spe_a_tirer = 1
+            self.nom_spe = "Chance"
+            self.icone_spe = "🍀"
+            self.fichier_cache = "historique_loto_master.csv"
+            self.fichier_tickets = "mes_tickets_loto.csv"
+
+        self.numeros_possibles = list(range(1, self.max_num + 1))
+        self.speciaux_possibles = list(range(1, self.max_spe + 1))
+        self.tirages_numeros = []
         self.tirages_speciaux = []
+        self.dates_tirages = []
+        self.nombres_premiers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+
+    def charger_donnees(self):
+        if not os.path.exists(self.fichier_cache): return False
+        
+        with open(self.fichier_cache, 'r', encoding='utf-8') as f:
+            lecteur = list(csv.DictReader(f.readlines(), delimiter=';'))
+            lecteur.reverse()
+            for ligne in lecteur:
+                try:
+                    num = [int(ligne[f'boule_{i}']) for i in range(1, 6)]
+                    if self.jeu == "EuroMillions":
+                        spe = [int(ligne[f'etoile_{i}']) for i in range(1, 3)]
+                    else:
+                        cle_chance = 'numero_chance' if 'numero_chance' in ligne else 'chance'
+                        spe = [int(ligne[cle_chance])]
+                        
+                    date = ligne.get('date_de_tirage', 'Date Inconnue')
+                    self.tirages_numeros.append(num)
+
         self.dates_tirages = []
         self.nombres_premiers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
 
@@ -250,7 +318,7 @@ with ong1:
         
         code_pro = st.text_input("🔑 Vous avez reçu un code d'accès ?", type="password")
         
-        if code_pro == "VIP-PRO-2026":
+        if code_pro == "markov":
             st.success("🎉 Mode PRO débloqué !")
             if st.button("🚀 Générer avec IA Markov", type="primary"):
                 st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
