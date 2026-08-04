@@ -196,7 +196,6 @@ def envoyer_telegram(token, chat_id, message):
 # --- UI GLOBALE & SÉLECTEUR DE JEU EN HAUT ---
 st.title("💎 Tableau de Bord FDJ Pro")
 
-# Un sélecteur de jeu bien visible en haut pour tout le monde (PC & Mobile)
 col_jeu1, col_jeu2 = st.columns([2, 1])
 with col_jeu1:
     jeu_selectionne = st.radio("Choisissez votre jeu :", ["EuroMillions", "Loto"], horizontal=True)
@@ -228,7 +227,7 @@ if not app.charger_donnees():
         st.success(f"Base {app.jeu} installée ! Démarrage..."); time.sleep(1); st.rerun()
     st.stop()
 
-# --- MENU LATÉRAL (Uniquement pour les réglages avancés) ---
+# --- MENU LATÉRAL (Filtres d'experts) ---
 st.sidebar.title("⚙️ Filtres d'Experts")
 configs_filtres = {
     'somme': st.sidebar.checkbox("✅ Somme (90 - 160)", value=True),
@@ -328,8 +327,19 @@ with ong2:
     ).properties(height=300)
     st.altair_chart(heatmap + heatmap.mark_text(baseline='middle').encode(text='Numéro:O', color=alt.value('white')), use_container_width=True)
     
-    if st.button(f"🗑️ Réinitialiser la base {app.jeu}"):
-        os.remove(app.fichier_cache); st.rerun()
+    st.markdown("---")
+    
+    # --- ZONE ADMIN SÉCURISÉE (Option B) ---
+    with st.expander("🔐 Zone Administration (Admin uniquement)"):
+        mdp_admin = st.text_input("Mot de passe admin", type="password", key=f"admin_pwd_{app.jeu}")
+        if mdp_admin == "ADMIN-FDJ-2026":
+            st.success("Mode Admin débloqué")
+            if st.button(f"🗑️ Réinitialiser la base {app.jeu}", type="primary"):
+                if os.path.exists(app.fichier_cache):
+                    os.remove(app.fichier_cache)
+                st.success("Base réinitialisée !")
+                time.sleep(1)
+                st.rerun()
 
 with ong3:
     st.header("💸 Budget & Gains")
