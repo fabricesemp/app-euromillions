@@ -233,56 +233,61 @@ st.title(f"💎 Tableau de Bord {app.jeu} Pro")
 ong1, ong2, ong3 = st.tabs(["🎲 Générateur", "🌡️ Heatmap & Stats", "💸 Budget & Gains"])
 
 with ong1:
-    c1, c2 = st.columns(2)
-    with c1: strat = st.selectbox("Stratégie", ["Prédictif (IA Markov)", "Mixte (Recommandé)", "Chauds", "Froids"])
-    with c2: nb_g = st.slider("Nombre de grilles", 1, 10, 1)
+        c1, c2 = st.columns(2)
+        with c1: strat = st.selectbox("Stratégie", ["Prédictif (IA Markov)", "Mixte (Recommandé)", "Chauds", "Froids"])
+        with c2: nb_g = st.slider("Nombre de grilles", 1, 10, 1)
 
-    if strat == "Prédictif (IA Markov)":
-        st.warning("🔒 **Version PRO :** La stratégie prédictive IA est actuellement en test privé.")
-        email_lead = st.text_input("💌 Entrez votre e-mail pour rejoindre la liste d'attente prioritaire :")
-    
-        if st.button("Rejoindre la liste d'attente"):
-            if "@" in email_lead:
-                try:
-                    token = st.secrets["TELEGRAM_TOKEN"]
-                    chat_id = st.secrets["TELEGRAM_CHAT_ID"]
-                    msg = f"🔔 *NOUVEAU PROSPECT PRO !*\nJeu : {app.jeu}\nEmail : {email_lead}"
-                    envoyer_telegram(token, chat_id, msg)
-                    st.success("✅ C'est noté ! Vous serez le premier prévenu du lancement public.")
-                    st.balloons()
-                except:
-                    st.error("Erreur serveur, veuillez réessayer.")
-        else:
-            st.error("⚠️ Veuillez entrer une adresse e-mail valide.")
+        if strat == "Prédictif (IA Markov)":
+            st.warning("🔒 **Version PRO :** La stratégie prédictive IA est actuellement en test privé.")
+            email_lead = st.text_input("💌 Entrez votre e-mail pour rejoindre la liste d'attente prioritaire :")
             
-else:
-    # Le bouton normal pour les autres stratégies gratuites (Chauds, Froids, Mixte)
-    if st.button("🚀 Générer des grilles", type="primary"):
-        st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
+            # CE BOUTON DOIT ÊTRE DÉCALÉ (dans le "if strat")
+            if st.button("Rejoindre la liste d'attente"):
+                if "@" in email_lead:
+                    try:
+                        token = st.secrets["TELEGRAM_TOKEN"]
+                        chat_id = st.secrets["TELEGRAM_CHAT_ID"]
+                        msg = f"🔔 *NOUVEAU PROSPECT PRO !*\nJeu : {app.jeu}\nEmail : {email_lead}"
+                        envoyer_telegram(token, chat_id, msg)
+                        st.success("✅ C'est noté ! Vous serez le premier prévenu du lancement public.")
+                        st.balloons()
+                    except Exception as e:
+                        st.error("⚠️ Erreur : N'avez-vous pas oublié d'ajouter vos codes dans les Settings > Secrets de Streamlit ?")
+                else:
+                    st.error("⚠️ Veuillez entrer une adresse e-mail valide.")
+                
+        else:
+            # Le bouton normal pour les autres stratégies gratuites (Chauds, Froids, Mixte)
+            if st.button("🚀 Générer des grilles", type="primary"):
+                st.session_state.dernieres_grilles = [app.generer_grille(strat, configs_filtres) for _ in range(nb_g)]
 
-    if st.session_state.dernieres_grilles:
-        st.markdown("---")
-        for i, (num, spe) in enumerate(st.session_state.dernieres_grilles):
-            hn, hs = app.backtester(num, spe)
-            st.info(f"**Grille {i+1} :**  \n🔢 Numéros : {', '.join(map(str, num))}  \n{app.icone_spe} {app.nom_spe} : {', '.join(map(str, spe))}")
-            st.caption(f"🕰️ *Meilleur historique : {hn} bon(s) numéro(s) et {hs} {app.nom_spe.lower()}.*")
-        
-        b1, b2 = st.columns(2)
-        with b1:
-            if st.button("💾 Enregistrer dans le portefeuille"):
-                with open(app.fichier_tickets, 'a', encoding='utf-8') as ft:
-                    d_str = datetime.now().strftime("%d/%m/%Y %H:%M")
-                    for num, spe in st.session_state.dernieres_grilles:
-                        ft.write(f"{d_str};{','.join(map(str, num))};{','.join(map(str, spe))}\n")
-                st.success("Tickets sauvegardés !")
-        with b2:
-            if st.button("📲 M'envoyer sur Telegram"):
-                if tele_token and tele_chat_id:
-                    msg = f"🎲 *Vos Grilles {app.jeu} ({strat})* 🎲\n\n"
-                    for i, (n, s) in enumerate(st.session_state.dernieres_grilles):
-                        msg += f"🎫 *Grille {i+1} :* [ {'-'.join(map(str, n))} ] {app.icone_spe} [ {'-'.join(map(str, s))} ]\n"
-                    if envoyer_telegram(tele_token, tele_chat_id, msg): st.success("Envoyé !")
-                    else: st.error("Erreur d'envoi.")
+            # L'AFFICHAGE DES GRILLES DOIT ÊTRE DÉCALÉ (dans le "else")
+            if 'dernieres_grilles' in st.session_state and st.session_state.dernieres_grilles:
+                st.markdown("---")
+                for i, (num, spe) in enumerate(st.session_state.dernieres_grilles):
+                    hn, hs = app.backtester(num, spe)
+                    st.info(f"**Grille {i+1} :**  \n🔢 Numéros : {', '.join(map(str, num))}  \n{app.icone_spe} {app.nom_spe} : {', '.join(map(str, spe))}")
+                    st.caption(f"🕰️ *Meilleur historique : {hn} bon(s) numéro(s) et {hs} {app.nom_spe.lower()}.*")
+                
+                b1, b2 = st.columns(2)
+                with b1:
+                    if st.button("💾 Enregistrer dans le portefeuille"):
+                        with open(app.fichier_tickets, 'a', encoding='utf-8') as ft:
+                            d_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+                            for num, spe in st.session_state.dernieres_grilles:
+                                ft.write(f"{d_str};{','.join(map(str, num))};{','.join(map(str, spe))}\n")
+                        st.success("Tickets sauvegardés !")
+                with b2:
+                    if st.button("📲 M'envoyer sur Telegram"):
+                        # On récupère les identifiants classiques s'ils sont définis ailleurs
+                        if tele_token and tele_chat_id:
+                            msg = f"🎲 *Vos Grilles {app.jeu} ({strat})* 🎲\n\n"
+                            for i, (n, s) in enumerate(st.session_state.dernieres_grilles):
+                                msg += f"🎫 *Grille {i+1} :* [ {'-'.join(map(str, n))} ] {app.icone_spe} [ {'-'.join(map(str, s))} ]\n"
+                            if envoyer_telegram(tele_token, tele_chat_id, msg): 
+                                st.success("Envoyé !")
+                            else: 
+                                st.error("Erreur d'envoi.")
 
 with ong2:
     st.write(f"Analyse basée sur **{len(app.tirages_numeros)} tirages**.")
